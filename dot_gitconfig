@@ -1,0 +1,5 @@
+[user]
+	name = Jan-André Schönekerl
+	email = not@real.email
+[init]
+	defaultBranch = main

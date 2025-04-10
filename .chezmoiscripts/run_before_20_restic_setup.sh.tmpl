@@ -1,0 +1,103 @@
+#!/bin/bash
+
+set -euo pipefail
+# set -x
+
+# Load logging functions
+source "${XDG_DATA_HOME:-$HOME/.local/share}/chezmoi/.chezmoiscripts/lib/run_common.sh.tmpl"
+
+trap 'fail_log "Script failed at line $LINENO running: $BASH_COMMAND"' ERR
+
+BASE_PATH=${XDG_DATA_HOME:-$HOME}
+USER_NAME="$(id -un)"
+
+# Random restic backup time between 00:00 and 06:59
+generate_backup_time() {
+    local minute=$(printf "%02d" $((RANDOM % 60)))
+    local hour=$(printf "%02d" $((RANDOM % 7)))  # 0–6
+    echo "$minute $hour * * *"
+}
+
+# Random restic forget time between 08:00 and 14:59
+generate_forget_time() {
+    local minute=$(printf "%02d" $((RANDOM % 60)))
+    local hour=$(printf "%02d" $((RANDOM % 7 + 8)))  # 8–14
+    echo "$minute $hour * * *"
+}
+
+# Random restic check time between 16:00 and 22:59
+generate_check_time() {
+    local minute=$(printf "%02d" $((RANDOM % 60)))
+    local hour=$(printf "%02d" $((RANDOM % 7 + 16)))  # 16–22
+    echo "$minute $hour * * *"
+}
+
+add_cron_job() {
+    local job_command="$1"
+    local schedule="$2"
+    local full_job="$schedule $job_command"
+
+    if crontab -u "$USER_NAME" -l 2>/dev/null | grep -Fq "$job_command"; then
+        info_log "Cron job already exists for $USER_NAME: $job_command"
+    else
+        info_log "Adding cron job for $USER_NAME: $full_job"
+
+        # Create clean, trimmed crontab lines
+        {
+            echo "CRON=TRUE"
+            crontab -u "$USER_NAME" -l 2>/dev/null | grep -v "^CRON=TRUE"
+            echo "$full_job"
+        } | sed 's/^[[:space:]]*//' | crontab -u "$USER_NAME" -
+    fi
+}
+
+# Check if restic is installed, if not install, else update
+if ! command -v restic &> /dev/null; then
+    info_log "restic is not installed. Attempting to install via apt..."
+    apt-get update -y
+    apt-get install -y restic
+
+    # Auto update restic
+    info_log "Auto-updating restic..."
+    restic self-update
+
+    # Verify if installation succeeded
+    if ! command -v restic &> /dev/null; then
+        fail_log "Failed to install restic. Exiting..."
+        exit 1
+    fi
+else 
+    # Auto update restic
+    info_log "restic is already installed. Attempting to auto-update..."
+    sudo restic self-update
+fi
+
+# Check if rclone is installed, if not install, else update
+if ! command -v rclone &> /dev/null; then
+    info_log "rclone is not installed. Attempting to install via script..."
+    curl https://rclone.org/install.sh | sudo bash
+
+    # Verify if installation succeeded
+    if ! command -v rclone &> /dev/null; then
+        fail_log "Failed to install rclone. Exiting..."
+        exit 1
+    fi
+else 
+    info_log "rclone is already installed. Attempting to auto-update..."
+    # If rclone is already installed the install script returns a non zero exit.
+    # This makes the script break, workaround: always return zero....
+    (curl -s https://rclone.org/install.sh | sudo bash) || true
+fi
+
+# Add backup cron jobs (0:00–6:59)
+add_cron_job "${BASE_PATH}/.local/bin/restic.sh local backup ${BASE_PATH} --exclude-caches" "$(generate_backup_time)"
+add_cron_job "${BASE_PATH}/.local/bin/restic.sh cloud backup ${BASE_PATH} --exclude-caches" "$(generate_backup_time)"
+
+# Add forget/prune cron jobs (8:00–14:59)
+add_cron_job "${BASE_PATH}/.local/bin/restic.sh local forget --keep-daily 7 --keep-weekly 5 --keep-monthly 12 --prune" "$(generate_forget_time)"
+add_cron_job "${BASE_PATH}/.local/bin/restic.sh cloud forget --keep-daily 7 --keep-weekly 5 --keep-monthly 12 --prune" "$(generate_forget_time)"
+
+# Add check cron jobs (16:00–22:59)
+add_cron_job "${BASE_PATH}/.local/bin/restic.sh local check --read-data-subset=10\\%" "$(generate_check_time)"
+add_cron_job "${BASE_PATH}/.local/bin/restic.sh cloud check --read-data-subset=10\\%" "$(generate_check_time)"
+

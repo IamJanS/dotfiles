@@ -1,0 +1,22 @@
+# For archives, use the standard chezmoi .chezmoiexternal file.
+# However, since a single binary is typically installed in the ~/bin or ~/.local/bin directory,
+# and the .chezmoiexternal mechanism expects to manage the entire directory,
+# it cannot be used for individual binaries. That was the reason to create this script.
+#
+#
+# The script run_before_15_web_binaries.sh.tmpl iterates over the URLs listed under web_binaries. 
+# For each entry, it downloads the binary, which may be compressed. The script automatically detects 
+# the compression algorithm, decompresses the file if needed, and installs it into the directory 
+# specified by install_dir.
+
+
+web_binaries:
+  - url: https://github.com/bitwarden/sdk-sm/releases/download/bws-v1.0.0/bws-x86_64-unknown-linux-gnu-1.0.0.zip
+    extract: false
+    install_dir: .local/bin
+#  - url: https://this.will.fail.com/bin.exe
+#    extract: false
+#    install_dir: .local/bin
+
+
+

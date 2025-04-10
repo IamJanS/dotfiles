@@ -1,0 +1,13 @@
+#!/bin/bash
+
+SCRIPT_NAME="$(basename "$0")"
+
+info_log() {
+  echo -e "[${SCRIPT_NAME}] \033[1;32mINFO:\033[0m $1"
+}
+
+fail_log() {
+  echo -e "[${SCRIPT_NAME}] \033[1;31mFAIL:\033[0m $1" >&2
+  exit 1
+}
+

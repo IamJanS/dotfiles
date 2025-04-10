@@ -1,0 +1,61 @@
+#!/bin/bash
+set -euo pipefail
+# set -x
+
+# Load logging functions
+source "${XDG_DATA_HOME:-$HOME/.local/share}/chezmoi/.chezmoiscripts/lib/run_common.sh.tmpl"
+
+trap 'fail_log "Script failed at line $LINENO running: $BASH_COMMAND"' ERR
+
+info_log "Starting web binaries installation..."
+
+{{- range .web_binaries }}
+URL="{{ .url }}"
+EXTRACT={{ .extract }}
+INSTALL_DIR="$HOME/{{ .install_dir }}"
+
+FILENAME="$(basename "$URL")"
+TMP_DIR="$(mktemp -d)"
+
+info_log "Downloading $FILENAME from $URL"
+if ! curl -fL -o "$TMP_DIR/$FILENAME" "$URL"; then
+  fail_log "Failed to download $URL"
+fi
+
+if [ "$EXTRACT" = true ]; then
+  info_log "Extracting $FILENAME"
+  case "$FILENAME" in
+    *.zip)
+      unzip -q "$TMP_DIR/$FILENAME" -d "$TMP_DIR" || fail_log "Failed to unzip $FILENAME"
+      ;;
+    *.tar.gz | *.tgz)
+      tar -xzf "$TMP_DIR/$FILENAME" -C "$TMP_DIR" || fail_log "Failed to extract $FILENAME"
+      ;;
+    *.tar.xz)
+      tar -xJf "$TMP_DIR/$FILENAME" -C "$TMP_DIR" || fail_log "Failed to extract $FILENAME"
+      ;;
+    *.tar.bz2)
+      tar -xjf "$TMP_DIR/$FILENAME" -C "$TMP_DIR" || fail_log "Failed to extract $FILENAME"
+      ;;
+    *)
+      fail_log "Unsupported archive format: $FILENAME"
+      ;;
+  esac
+
+  BIN_FILE="$(find "$TMP_DIR" -type f -perm -u+x | head -n 1)"
+  if [ -z "$BIN_FILE" ]; then
+    fail_log "No executable file found in archive"
+  fi
+else
+  BIN_FILE="$TMP_DIR/$FILENAME"
+fi
+
+DEST="$INSTALL_DIR/$(basename "$BIN_FILE")"
+info_log "Installing $(basename "$BIN_FILE") to $INSTALL_DIR"
+cp "$BIN_FILE" "$DEST"
+chmod u+x "$DEST"
+
+rm -rf "$TMP_DIR"
+{{- end }}
+
+info_log "Web binaries installation completed."

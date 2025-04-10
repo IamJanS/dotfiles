@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# Only log if running via cron
+if [[ "$CRON" == "TRUE" ]]; then
+    exec >> "${HOME}/.local/state/restic/logs/restic.log" 2>&1
+fi
+
+# --- Config ---
+PATH="/usr/bin:${HOME}/bin"
+# NTFY_TOPIC="https://ntfy.sh/my-backup-notifier"
+NTFY_TOPIC="{{ (bitwardenSecrets "31e311b5-3abe-452b-84bf-b2b60153b65a").value }}"
+export RESTIC_PASSWORD_FILE="${HOME}/.config/restic/crypto.key"
+
+# Logging function
+log() {
+    echo -e "[$(date '+%d-%m-%Y %H:%M:%S') $(hostname -s) $0] Info: $1"
+}
+
+# --- Error notification + logging ---
+error_exit() {
+    local message="$1"
+    local code="$2"
+    local reason="Unknown error"
+
+    case "$code" in
+        1) reason="General command failure." ;;
+        2) reason="There was a fatal error (no snapshot created)." ;;
+        3) reason="Some source data could not be read (incomplete snapshot created)." ;;
+        10) reason="Repository does not exist." ;;
+        11) reason="Failed to lock repository." ;;
+        12) reason="Wrong password." ;;
+        130) reason="Restic was interrupted (SIGINT or SIGSTOP)." ;;
+    esac
+
+    echo -e "[$(date '+%d-%m-%Y %H:%M:%S') $(hostname -s) $0] ERROR [$code]: $message - $reason" >&2
+    curl -s -X POST "$NTFY_TOPIC" \
+        -H "Title: Restic Job $(hostname -s) Failed [Code $code]" \
+        -H "Priority: high" \
+        -d "$message - $reason"
+
+    exit "$code"
+}
+
+# Use first argument to determine repository, shift it from the arg list
+REPO_TYPE="$1"
+shift
+
+# Set the repository based on the first argument
+case "$REPO_TYPE" in
+    local)
+        export RESTIC_REPOSITORY="{{ (bitwardenSecrets "e95d4a60-52cb-43bb-b8a6-b2b80080df07").value }}"
+        ;;
+    cloud)
+        export RESTIC_REPOSITORY="{{ (bitwardenSecrets "d589e6b7-572d-4708-b7bb-b2b800810c5d").value }}"
+        ;;
+    *)
+        error_exit "Usage: $0 [local|cloud] <restic-args...>" 1
+        ;;
+esac
+
+# Log and run
+log "Using repository ${RESTIC_REPOSITORY}"
+log "Using Restic options \"$*\""
+
+# --- Run restic command silently unless there's an error ---
+restic "$@"
+exit_code=$?
+
+if [ "$exit_code" -ne 0 ]; then
+    error_exit "Restic command failed: restic $*" "$exit_code"
+fi
+
+exit 0
