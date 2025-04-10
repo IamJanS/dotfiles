@@ -11,7 +11,7 @@ info_log "Starting web binaries installation..."
 
 {{- range .web_binaries }}
 URL="{{ .url }}"
-EXTRACT={{ .extract }}
+EXTRACT="{{ .extract }}"
 INSTALL_DIR="$HOME/{{ .install_dir }}"
 
 # Ensure the install directory exists
@@ -20,7 +20,7 @@ if [ ! -d "$INSTALL_DIR" ]; then
   mkdir -p "$INSTALL_DIR" || fail_log "Failed to create install directory"
 fi
 
-# Add install dir to PATH for this script's environment
+# Add install dir to PATH for this script session
 export PATH="$INSTALL_DIR:$PATH"
 
 FILENAME="$(basename "$URL")"
@@ -31,7 +31,7 @@ if ! curl -fL -o "$TMP_DIR/$FILENAME" "$URL"; then
   fail_log "Failed to download $URL"
 fi
 
-if [ "$EXTRACT" = true ]; then
+if [[ "$EXTRACT" == "true" ]]; then
   info_log "Extracting $FILENAME"
   case "$FILENAME" in
     *.zip)
@@ -55,13 +55,14 @@ if [ "$EXTRACT" = true ]; then
   if [ -z "$BIN_FILE" ]; then
     fail_log "No executable file found in archive"
   fi
+  info_log "Found extracted binary: $(basename "$BIN_FILE")"
 else
   BIN_FILE="$TMP_DIR/$FILENAME"
+  info_log "No extraction requested; treating $FILENAME as the binary"
 fi
 
 DEST="$INSTALL_DIR/$(basename "$BIN_FILE")"
 info_log "Installing $(basename "$BIN_FILE") to $INSTALL_DIR"
-
 cp "$BIN_FILE" "$DEST"
 chmod u+x "$DEST"
 
