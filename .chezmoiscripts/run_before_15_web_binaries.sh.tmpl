@@ -14,6 +14,15 @@ URL="{{ .url }}"
 EXTRACT={{ .extract }}
 INSTALL_DIR="$HOME/{{ .install_dir }}"
 
+# Ensure the install directory exists
+if [ ! -d "$INSTALL_DIR" ]; then
+  info_log "Creating install directory: $INSTALL_DIR"
+  mkdir -p "$INSTALL_DIR" || fail_log "Failed to create install directory"
+fi
+
+# Add install dir to PATH for this script's environment
+export PATH="$INSTALL_DIR:$PATH"
+
 FILENAME="$(basename "$URL")"
 TMP_DIR="$(mktemp -d)"
 
@@ -52,6 +61,7 @@ fi
 
 DEST="$INSTALL_DIR/$(basename "$BIN_FILE")"
 info_log "Installing $(basename "$BIN_FILE") to $INSTALL_DIR"
+
 cp "$BIN_FILE" "$DEST"
 chmod u+x "$DEST"
 
