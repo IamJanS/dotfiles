@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+# set -euo pipefail
 # set -x
 
 # Load logging functions
@@ -37,17 +37,15 @@ add_cron_job() {
     local schedule="$2"
     local full_job="$schedule $job_command"
 
-    if crontab -u "$USER_NAME" -l 2>/dev/null | grep -Fq "$job_command"; then
+    if crontab -l 2>/dev/null | grep -Fq "$job_command"; then
         info_log "Cron job already exists for $USER_NAME: $job_command"
     else
         info_log "Adding cron job for $USER_NAME: $full_job"
-
-        # Create clean, trimmed crontab lines
         {
             echo "CRON=TRUE"
-            crontab -u "$USER_NAME" -l 2>/dev/null | grep -v "^CRON=TRUE"
+            crontab -l 2>/dev/null | grep -v "^CRON=TRUE"
             echo "$full_job"
-        } | sed 's/^[[:space:]]*//' | crontab -u "$USER_NAME" -
+        } | sed 's/^[[:space:]]*//' | crontab -u -
     fi
 }
 
