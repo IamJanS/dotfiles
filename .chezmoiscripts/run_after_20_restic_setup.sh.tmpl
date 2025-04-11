@@ -52,12 +52,12 @@ add_cron_job() {
 # Check if restic is installed, if not install, else update
 if ! command -v restic &> /dev/null; then
     info_log "restic is not installed. Attempting to install via apt..."
-    apt-get update -y
-    apt-get install -y restic
+    sudo apt-get update -y
+    sudo apt-get install -y restic
 
     # Auto update restic
     info_log "Auto-updating restic..."
-    restic self-update
+    sudo restic self-update
 
     # Verify if installation succeeded
     if ! command -v restic &> /dev/null; then
