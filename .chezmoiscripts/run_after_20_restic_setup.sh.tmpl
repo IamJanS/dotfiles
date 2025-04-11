@@ -45,7 +45,7 @@ add_cron_job() {
             echo "CRON=TRUE"
             crontab -l 2>/dev/null | grep -v "^CRON=TRUE"
             echo "$full_job"
-        } | sed 's/^[[:space:]]*//' | crontab -u -
+        } | sed 's/^[[:space:]]*//' | crontab -
     fi
 }
 
