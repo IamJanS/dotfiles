@@ -12,19 +12,31 @@ info_log "Starting web binaries installation..."
 {{- range .web_binaries }}
 URL="{{ .url }}"
 EXTRACT="{{ .extract }}"
+
+{{- $firstChar := printf "%c" (index .install_dir 0) }}
+{{- if eq $firstChar "/" }}
+INSTALL_DIR="{{ .install_dir }}"
+{{- else }}
 INSTALL_DIR="$HOME/{{ .install_dir }}"
+{{- end }}
+
+FILENAME="$(basename "$URL")"
+TMP_DIR="$(mktemp -d)"
+
+# Determine if sudo is needed
+USE_SUDO=""
+if [[ "$INSTALL_DIR" != "$HOME"* ]]; then
+  USE_SUDO="sudo"
+fi
 
 # Ensure the install directory exists
 if [ ! -d "$INSTALL_DIR" ]; then
   info_log "Creating install directory: $INSTALL_DIR"
-  mkdir -p "$INSTALL_DIR" || fail_log "Failed to create install directory"
+  $USE_SUDO mkdir -p "$INSTALL_DIR" || fail_log "Failed to create install directory"
 fi
 
 # Add install dir to PATH for this script session
 export PATH="$INSTALL_DIR:$PATH"
-
-FILENAME="$(basename "$URL")"
-TMP_DIR="$(mktemp -d)"
 
 info_log "Downloading $FILENAME from $URL"
 if ! curl -fL -o "$TMP_DIR/$FILENAME" "$URL"; then
@@ -63,8 +75,8 @@ fi
 
 DEST="$INSTALL_DIR/$(basename "$BIN_FILE")"
 info_log "Installing $(basename "$BIN_FILE") to $INSTALL_DIR"
-cp "$BIN_FILE" "$DEST"
-chmod u+x "$DEST"
+$USE_SUDO cp "$BIN_FILE" "$DEST"
+$USE_SUDO chmod 755 "$DEST"
 
 rm -rf "$TMP_DIR"
 {{- end }}

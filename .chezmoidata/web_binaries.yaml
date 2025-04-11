@@ -13,7 +13,10 @@
 web_binaries:
   - url: https://github.com/bitwarden/sdk-sm/releases/download/bws-v1.0.0/bws-x86_64-unknown-linux-gnu-1.0.0.zip
     extract: true
-    install_dir: .local/bin
+    install_dir: /usr/local/bin
+#  - url: https://github.com/bitwarden/sdk-sm/releases/download/bws-v1.0.0/bws-x86_64-unknown-linux-gnu-1.0.0.zip
+#    extract: true
+#    install_dir: .local/bin
 #  - url: https://this.will.fail.com/bin.exe
 #    extract: false
 #    install_dir: .local/bin
