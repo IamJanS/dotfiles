@@ -88,8 +88,8 @@ else
 fi
 
 # Add backup cron jobs (0:00–6:59)
-add_cron_job "${BASE_PATH}/.local/bin/restic.sh local backup ${BASE_PATH} --exclude-caches" "$(generate_backup_time)"
-add_cron_job "${BASE_PATH}/.local/bin/restic.sh cloud backup ${BASE_PATH} --exclude-caches" "$(generate_backup_time)"
+add_cron_job "${BASE_PATH}/.local/bin/restic.sh local backup ${BASE_PATH} --exclude-caches --exclude-file=${BASE_PATH}/.config/restic/exclude.txt" "$(generate_backup_time)"
+add_cron_job "${BASE_PATH}/.local/bin/restic.sh cloud backup ${BASE_PATH} --exclude-caches --exclude-file=${BASE_PATH}/.config/restic/exclude.txt" "$(generate_backup_time)"
 
 # Add forget/prune cron jobs (8:00–14:59)
 add_cron_job "${BASE_PATH}/.local/bin/restic.sh local forget --keep-daily 7 --keep-weekly 5 --keep-monthly 12 --prune" "$(generate_forget_time)"
