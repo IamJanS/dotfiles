@@ -4,4 +4,6 @@ packages:
   - unzip
   - libpam-umask
   - tree
-  
+  - net-tools
+  - nmap
+  - rdfind
