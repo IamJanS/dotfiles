@@ -1,0 +1,2 @@
+alias localrestic='/home/ethos/.local/bin/restic.sh local'
+alias cloudrestic='/home/ethos/.local/bin/restic.sh cloud'
