@@ -34,7 +34,7 @@ error_exit() {
 
     echo -e "[$(date '+%d-%m-%Y %H:%M:%S') $(hostname -s) $0] ERROR [$code]: $message - $reason" >&2
     curl -s -X POST "$NTFY_TOPIC" \
-        -H "Title: Restic Job $(hostname -s) Failed [Code $code]" \
+        -H "Title: Restic Job $(hostname -s) ${RESTIC_REPOSITORY} Failed [Code $code]" \
         -H "Priority: high" \
         -d "$message - $reason"
 
