@@ -7,6 +7,7 @@ fi
 
 # --- Config ---
 PATH="/usr/bin:${HOME}/bin"
+
 # NTFY_TOPIC="https://ntfy.sh/my-backup-notifier"
 NTFY_TOPIC="{{ (bitwardenSecrets "31e311b5-3abe-452b-84bf-b2b60153b65a").value }}"
 export RESTIC_PASSWORD_FILE="${HOME}/.config/restic/crypto.key"
@@ -57,6 +58,18 @@ case "$REPO_TYPE" in
         error_exit "Usage: $0 [local|cloud] <restic-args...>" 1
         ;;
 esac
+
+# Check if the repository exists
+log "Checking if repository ${RESTIC_REPOSITORY} exists..."
+if ! restic cat config >/dev/null 2>&1; then
+    log "Repository ${RESTIC_REPOSITORY} does not exist. Initializing..."
+    if ! restic init; then
+        error_exit "Failed to initialize repository ${RESTIC_REPOSITORY}" 10
+    fi
+    log "Repository ${RESTIC_REPOSITORY} initialized successfully."
+else
+    log "Repository ${RESTIC_REPOSITORY} exists."
+fi
 
 # Log and run
 log "Using repository ${RESTIC_REPOSITORY}"
