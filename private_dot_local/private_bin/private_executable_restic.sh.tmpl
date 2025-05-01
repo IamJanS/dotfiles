@@ -71,6 +71,17 @@ else
     log "Repository ${RESTIC_REPOSITORY} exists."
 fi
 
+# Some docker images can't be taimed and keep creating files as root
+# This is a workaround to fix the permissions
+if [ -d "${HOME}/docker" ]; then
+    log "Fixing permissions for ${HOME}/docker"
+    sudo chown -R "$(id -u):$(id -g)" "${HOME}/docker"
+    if [ $? -ne 0 ]; then
+        error_exit "Failed to fix permissions for ${HOME}/docker" 1
+    fi
+    log "Permissions fixed for ${HOME}/docker"
+fi
+
 # Log and run
 log "Using repository ${RESTIC_REPOSITORY}"
 log "Using Restic options \"$*\""
