@@ -7,3 +7,4 @@ packages:
   - net-tools
   - nmap
   - rdfind
+  - fuse3
