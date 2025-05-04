@@ -1,2 +1,55 @@
+# Restic backup aliases
+
 alias localrestic='/home/ethos/.local/bin/restic.sh local'
 alias cloudrestic='/home/ethos/.local/bin/restic.sh cloud'
+
+_mount_rclone() {
+  local name="$1"
+  shift
+  local target="${HOME}/media/${name}"
+  local logdir="${HOME}/.local/state/rclone"
+
+  if mountpoint -q "$target"; then
+    echo "${name} is already mounted."
+  else
+    echo "Mounting ${name} with options: $*"
+    nohup sudo -u "$(id -un)" rclone mount "${name}:" "$target" "$@" >> "${logdir}/mount${name}.log" 2>&1 &
+  fi
+}
+
+_umount_rclone() {
+  local name="$1"
+  local target="${HOME}/media/${name}"
+
+  if mountpoint -q "$target"; then
+    echo "Unmounting ${name}..."
+    sudo fusermount3 -u "$target" 2>/dev/null || sudo fusermount -u "$target"
+  else
+    echo "${name} is not mounted."
+  fi
+}
+
+# Aliases for pcloud mounts
+alias mountpcloud='_mount_rclone pcloud --vfs-cache-mode writes --multi-thread-streams=0'
+alias mountpcloudcrypt='_mount_rclone pcloudcrypt --vfs-cache-mode writes --multi-thread-streams=0'
+# Aliases for dropbox mounts
+alias mountdropbox='_mount_rclone dropbox --vfs-cache-mode writes --multi-thread-streams=0'
+alias mountdropboxcrypt='_mount_rclone dropboxcrypt --vfs-cache-mode writes --multi-thread-streams=0'
+# Aliases for Google-drive mounts
+alias mountgoogle-drive='_mount_rclone google-drive --vfs-cache-mode writes --multi-thread-streams=0'
+alias mountgoogle-drivecrypt='_mount_rclone google-drivecrypt --vfs-cache-mode writes --multi-thread-streams=0'
+
+# Aliases for pcloud un-mounts
+alias umountpcloud='_umount_rclone pcloud'
+alias umountpcloudcrypt='_umount_rclone pcloudcrypt'
+# Aliases for dropbox un-mounts
+alias umountdropbox='_umount_rclone dropbox'
+alias umountdropboxcrypt='_umount_rclone dropboxcrypt'
+# Aliases for Google-drive un-mounts
+alias umountgoogle-drive='_umount_rclone google-drive'
+alias umountgoogle-drivecrypt='_umount_rclone google-drivecrypt'
+
+
+# Aliases for un/mounting all drives
+alias umountall='umountpcloud; umountpcloudcrypt; umountdropbox; umountdropboxcrypt; umountgoogle-drive; umountgoogle-drivecrypt'
+alias mountall='mountpcloud; mountpcloudcrypt; mountdropbox; mountdropboxcrypt; mountgoogle-drive; mountgoogle-drivecrypt'
