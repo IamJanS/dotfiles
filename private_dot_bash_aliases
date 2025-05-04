@@ -7,7 +7,7 @@ _mount_rclone() {
   local name="$1"
   shift
   local target="${HOME}/media/${name}"
-  local logdir="${HOME}/.local/state/rclone"
+  local logdir="${HOME}/.local/state/rclone/logs"
 
   if mountpoint -q "$target"; then
     echo "${name} is already mounted."
